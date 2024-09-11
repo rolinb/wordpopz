@@ -3,7 +3,7 @@ import './LetterBubble.css'
 type LetterBubbleProps = {
     value: string,
     isClicked: Boolean | false,
-    onClick: (l :string) => void 
+    onClick: (l :string, state :boolean) => void 
 }
 
 
@@ -13,8 +13,9 @@ function LetterBubble(props: LetterBubbleProps) {
     const [isClicked, setIsClicked] = useState(false)
 
     const handleClick = () => {
+        const state = !isClicked //use const to handle async nature of state
         setIsClicked(!isClicked);
-        props.onClick(props.value)
+        props.onClick(props.value, state)
     }
 
     return (
