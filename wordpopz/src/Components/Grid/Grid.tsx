@@ -10,7 +10,6 @@ type GridProps = {
 }
 
 type LetterGridInfo = {
-    letter: string,
     active: boolean,
 }
 
@@ -18,53 +17,66 @@ function Grid(props: GridProps) {
 
     //Scrabble letter counts go to 98 since there are 2 blanks, 
     //this is close enough to 100 to take the random and give the extra one to e since it's most common anyways
-    const letters = ["e", "a", "i", "o", "n", "r", "t", "l", "s","u", 
-                    "d", "g", 
-                    "b", "c", "m", "p",
-                    "f", "h", "v", "w", "y",
-                    "k",
-                    "j", "x",
-                    "q", "z"
-                    ]
-    const letterWeights = [12, 21, 30, 38, 44, 50, 56, 60, 64, 68, 
-                    72, 75,
-                    77, 79, 81, 83,
-                    85, 87, 89, 91, 93,
-                    94,
-                    95, 96,
-                    97, 98
-                    ]
-
-    function weighted_letter_generation(): string{
-        const r = Math.random()*98
-        for (let i = 0; i < letterWeights.length; i++) {
-            if (letterWeights[i] >= r){
-                return letters[i]
-            }
-        }
-        return "e"
-    }
+    
 
     const [currentWord, setCurrentWord] = useState("");
     const [letterGrid, setLetterGrid] = useState<LetterGridInfo[]>([]); //determine grid size after but just for starting we can go small
+    const [indices, setIndices] = useState<number[]>([])
 
-    useEffect( () => setLetterGrid(new Array(9).fill(0).map(()=> {
+    useEffect( () => setLetterGrid(new Array(64).fill(0).map(()=> {
         let lgi:  LetterGridInfo= {
-            letter: weighted_letter_generation(),
             active: false,
         }      
     return lgi})),[])
     
 
 
-    // Child should not care about it's index that's only for the grid so make it an optional
-    const handleChildClick= (letter :string, selected :boolean, index?: number) => {
-        console.log("Index clicked: " + index)
-        if (selected) {
-            setCurrentWord(currentWord + letter)
-        } else {
-            const tmp  = currentWord.slice(0, -1)
-            setCurrentWord(tmp)
+    /*
+    Rules for click being allowed:
+    touching last selected
+    not currently in the list (except if last selected)
+    */
+    function isAllowedClick(index: number): boolean {
+        if (indices.includes(index)){ //block clicking letters that weren't last and in the array
+            return false
+        }
+        const last = indices[indices.length-1]
+         if (last % 8 === 0) { //Left side
+            if (last +1 === index || last+8 === index || last-7 ===index || last+9 === index || last-8 ===index) {
+                return true
+            }
+            return false
+        }
+        if (last %8 === 7) { //Right side
+            if (last-1 === index|| last+8 === index || last-8 ===index || last+7 ===index || last-9 === index) {
+                return true
+            }
+            return false
+        }
+        if (last+1 === index || last-1 === index || last+8 === index || last-8 === index || last-7 ===index || last+9 === index || last+7 ===index || last-9 === index){
+            return true
+        }
+        return false
+
+    }
+
+    const handleChildClick= (letter: string, selected :boolean, index: number) => {
+
+        //Do this before other checks as the logic is to deselect if it's allowed as opposed to select
+        const lastSelected = indices[indices.length-1]
+        if (lastSelected === index){
+            letterGrid[index].active = false
+            setLetterGrid(letterGrid.slice())
+            indices.pop()
+            setCurrentWord(currentWord.slice(0, -1))
+            return
+        }
+        if (lastSelected === undefined || isAllowedClick(index)){
+            letterGrid[index].active = true
+            setLetterGrid(letterGrid.slice())
+            indices.push(index)
+            setCurrentWord(currentWord + letter )
+            return
         }
     }
 
@@ -72,12 +84,8 @@ function Grid(props: GridProps) {
         props.onClick(currentWord)
     }
 
-    const generateGrid = () => {
-
-    }
-
     const letterBubbles = letterGrid.map((c,i) => 
-        <LetterBubble key={i} value={c.letter} isClicked={c.active} onClick={(letter: string, state :boolean) => handleChildClick(letter, state, i)}/>
+        <LetterBubble key={i} isClicked={c.active} onClick={(letter: string, state :boolean) => handleChildClick(letter, state, i)}/>
     )
 
     return (

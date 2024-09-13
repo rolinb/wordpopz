@@ -1,7 +1,6 @@
 import React from 'react';
 import logo from './logo.svg';
 import './App.css';
-import LetterBubble from './Components/LetterBubble/LetterBubble';
 import Game from './Components/Game/Game'
 function App() {
   return (
